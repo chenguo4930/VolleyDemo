@@ -3,8 +3,7 @@ package com.example.cheng.volleydemo.http.download.enums;
 /**
  * Created by Administrator on 2017/1/17 0017.
  */
-public enum DownloadStopMode
-{
+public enum DownloadStopMode {
     /**
      * 后台根据下载优先级调度自动停止下载任务
      */
@@ -14,8 +13,8 @@ public enum DownloadStopMode
      * 手动停止下载任务
      */
     hand(1);
-    DownloadStopMode(Integer value)
-    {
+
+    DownloadStopMode(Integer value) {
         this.value = value;
     }
 
@@ -24,22 +23,17 @@ public enum DownloadStopMode
      */
     private Integer value;
 
-    public Integer getValue()
-    {
+    public Integer getValue() {
         return value;
     }
 
-    public void setValue(Integer value)
-    {
+    public void setValue(Integer value) {
         this.value = value;
     }
 
-    public static DownloadStopMode getInstance(int value)
-    {
-        for (DownloadStopMode mode : DownloadStopMode.values())
-        {
-            if (mode.getValue() == value)
-            {
+    public static DownloadStopMode getInstance(int value) {
+        for (DownloadStopMode mode : DownloadStopMode.values()) {
+            if (mode.getValue() == value) {
                 return mode;
             }
         }

@@ -13,7 +13,6 @@ import android.util.Log;
 import com.example.cheng.volleydemo.db.BaseDaoFactory;
 import com.example.cheng.volleydemo.http.HttpTask;
 import com.example.cheng.volleydemo.http.RequestHolder;
-import com.example.cheng.volleydemo.http.ThreadPoolManager;
 import com.example.cheng.volleydemo.http.download.dao.DownloadDao;
 import com.example.cheng.volleydemo.http.download.enums.DownloadStatus;
 import com.example.cheng.volleydemo.http.download.enums.DownloadStopMode;
@@ -28,9 +27,6 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.FutureTask;
-
-import static com.example.cheng.volleydemo.MainActivity.url;
 
 
 /**
@@ -41,7 +37,7 @@ import static com.example.cheng.volleydemo.MainActivity.url;
  * @since 2017-04-08
  */
 public class DownFileManager implements IDownloadServiceCallable {
-    private static final String TAG = "DownFileManager";
+    private static final String TAG = "seven";
 
     private byte[] lock = new byte[0];
     DownloadDao downloadDao = BaseDaoFactory.getInstance().getDataHelper(DownloadDao.class, DownloadItemInfo.class);
@@ -51,7 +47,7 @@ public class DownFileManager implements IDownloadServiceCallable {
      */
     private final List<IDownloadCallable> applisteners = new CopyOnWriteArrayList<IDownloadCallable>();
     /**
-     * 怎在下载的所有任务
+     * 承载下载的所有任务
      */
     private static List<DownloadItemInfo> downloadFileTaskList = new CopyOnWriteArrayList();
 
@@ -79,7 +75,6 @@ public class DownFileManager implements IDownloadServiceCallable {
         if (priority == null) {
             priority = Priority.low;
         }
-
         File file = new File(filePath);
         DownloadItemInfo downloadItemInfo = null;
 
@@ -103,7 +98,6 @@ public class DownFileManager implements IDownloadServiceCallable {
                     }
                 }
             }
-
             /**
              * 插入数据库
              */
@@ -133,48 +127,46 @@ public class DownFileManager implements IDownloadServiceCallable {
                         Log.i(TAG, "还未开始下载");
                         downloadItemInfo.setStatus(DownloadStatus.failed.getValue());
                     }
-                }
-                //判断数据库中 总长度是否等于文件长度
-                if (downloadItemInfo.getTotalLen() == file.length()) {
-                    downloadItemInfo.setStatus(DownloadStatus.finish.getValue());
-                    synchronized (applisteners) {
-                        for (IDownloadCallable applistener : applisteners) {
-                            //应该在每一个上层回调接口处try catch
-                            try {
-                                applistener.onDownloadError(downloadItemInfo.getId(), 4, "已经下载了");
-                            } catch (Exception e) {
-
+                    //判断数据库中 总长度是否等于文件长度
+                    if (downloadItemInfo.getTotalLen() == file.length() && downloadItemInfo.getTotalLen() != 0) {
+                        downloadItemInfo.setStatus(DownloadStatus.finish.getValue());
+                        synchronized (applisteners) {
+                            for (IDownloadCallable applistener : applisteners) {
+                                //应该在每一个上层回调接口处try catch
+                                try {
+                                    applistener.onDownloadError(downloadItemInfo.getId(), 4, "已经下载了");
+                                } catch (Exception e) {
+                                }
                             }
                         }
                     }
-                    /**
-                     * 更新
-                     */
-                    downloadDao.updateRecord(downloadItemInfo);
                 }
-
-
                 /**
-                 * 判断是否已经下载完成
+                 * 更新
                  */
-                if (downloadItemInfo.getStatus() == DownloadStatus.finish.getValue()) {
-                    Log.i(TAG, "已经下载完成  回调应用层");
-                    final int downId = downloadItemInfo.getId();
-                    synchronized (applisteners) {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                for (IDownloadCallable downloadCallable : applisteners) {
-                                    downloadCallable.onDownloadStatusChanged(downId, DownloadStatus.finish);
-                                }
-                            }
-                        });
-                    }
-                    downloadDao.removeRecordFromMemery(downId);
-                    return downloadItemInfo.getId();
-                }//之前的下载 状态为暂停状态
-
+                downloadDao.updateRecord(downloadItemInfo);
             }
+
+            /**
+             * 判断是否已经下载完成
+             */
+            if (downloadItemInfo.getStatus() == DownloadStatus.finish.getValue()) {
+                Log.i(TAG, "已经下载完成  回调应用层");
+                final int downId = downloadItemInfo.getId();
+                synchronized (applisteners) {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (IDownloadCallable downloadCallable : applisteners) {
+                                downloadCallable.onDownloadStatusChanged(downId, DownloadStatus.finish);
+                            }
+                        }
+                    });
+                }
+                downloadDao.removeRecordFromMemery(downId);
+                return downloadItemInfo.getId();
+            }
+            //之前的下载,状态为暂停状态
             List<DownloadItemInfo> allDowning = downloadFileTaskList;
             //当前下载不是最高级  则先退出下载
             if (priority != Priority.high) {
@@ -205,39 +197,8 @@ public class DownFileManager implements IDownloadServiceCallable {
                 return downloadItemInfo.getId();
             }
             return -1;
-
         }
         return -1;
-    }
-
-    public DownloadItemInfo reallyDown(DownloadItemInfo downloadItemInfo) {
-        synchronized (lock) {
-            String[] preFix = url.split("/");
-            String afterFix = preFix[preFix.length - 1];
-            File file = new File(Environment.getExternalStorageDirectory(), afterFix);
-
-            DownloadItemInfo downloadItemInfo = new DownloadItemInfo(url, file.getAbsolutePath());
-            RequestHolder requestHolder = new RequestHolder();
-
-            //设置请求下载的策略
-            IHttpService httpService = new FileDownHttpService();
-            //得到请求头的参数 map
-            Map<String, String> map = httpService.getHttpHeadMap();
-
-            IHttpListener httpListener = new DownloadListener(downloadItemInfo, this, httpService);
-
-            requestHolder.setHttpListener(httpListener);
-            requestHolder.setHttpService(httpService);
-            requestHolder.setUrl(url);
-
-            HttpTask httpTask = new HttpTask(requestHolder);
-            downloadFileTaskList.add(downloadItemInfo);
-            try {
-                ThreadPoolManager.getInstance().execte(new FutureTask<Object>(httpTask, null));
-            } catch (InterruptedException e) {
-
-            }
-        }
     }
 
     /**
@@ -267,48 +228,6 @@ public class DownFileManager implements IDownloadServiceCallable {
     }
 
     /**
-     * 添加观察者
-     *
-     * @param downCallable
-     */
-    public void setDownCallable(IDownloadCallable downCallable) {
-        synchronized (applisteners) {
-            applisteners.add(downCallable);
-        }
-    }
-
-
-    @Override
-    public void onDownloadStatusChanged(DownloadItemInfo downloadItemInfo) {
-
-    }
-
-    @Override
-    public void onTotalLengthReceived(DownloadItemInfo downloadItemInfo) {
-
-    }
-
-    @Override
-    public void onCurrentSizeChanged(DownloadItemInfo downloadItemInfo, double downLenth, long speed) {
-
-    }
-
-    @Override
-    public void onDownloadSuccess(DownloadItemInfo downloadItemInfo) {
-
-    }
-
-    @Override
-    public void onDownloadPause(DownloadItemInfo downloadItemInfo) {
-
-    }
-
-    @Override
-    public void onDownloadError(DownloadItemInfo downloadItemInfo, int var2, String var3) {
-
-    }
-
-    /**
      * 判断当前是否正在下载
      *
      * @param absolutePath
@@ -322,4 +241,86 @@ public class DownFileManager implements IDownloadServiceCallable {
         }
         return false;
     }
+
+    /**
+     * 添加观察者
+     *
+     * @param downCallable
+     */
+    public void setDownCallable(IDownloadCallable downCallable) {
+        synchronized (applisteners) {
+            applisteners.add(downCallable);
+        }
+    }
+
+    /**
+     * 下载
+     *
+     * @param downloadItemInfo
+     * @return
+     */
+    public DownloadItemInfo reallyDown(DownloadItemInfo downloadItemInfo) {
+        synchronized (lock) {
+            //实例化DownloadItem
+            RequestHolder requestHolder = new RequestHolder();
+            //设置请求下载的策略
+            IHttpService httpService = new FileDownHttpService();
+            //得到请求头的参数 map
+            Map<String, String> map = httpService.getHttpHeadMap();
+            /**
+             * 处理结果的策略
+             */
+            IHttpListener httpListener = new DownloadListener(downloadItemInfo, this, httpService);
+
+            requestHolder.setHttpListener(httpListener);
+            requestHolder.setHttpService(httpService);
+            requestHolder.setUrl(downloadItemInfo.getUrl());
+
+            HttpTask httpTask = new HttpTask(requestHolder);
+            downloadItemInfo.setHttpTask(httpTask);
+            /**
+             * 添加
+             */
+            downloadFileTaskList.add(downloadItemInfo);
+            httpTask.start();
+//            try {
+//                ThreadPoolManager.getInstance().execte(new FutureTask<Object>(httpTask, null));
+//            } catch (InterruptedException e) {
+//
+//            }
+        }
+        return downloadItemInfo;
+    }
+
+    @Override
+    public void onDownloadStatusChanged(DownloadItemInfo downloadItemInfo) {
+
+    }
+
+    @Override
+    public void onTotalLengthReceived(DownloadItemInfo downloadItemInfo) {
+
+    }
+
+    @Override
+    public void onCurrentSizeChanged(DownloadItemInfo downloadItemInfo, double downLenth, long speed) {
+        Log.i(TAG, "下载速度：" + speed / 1000 + "k/s");
+        Log.i(TAG, "-----路径  " + downloadItemInfo.getFilePath() + "  下载长度  " + downLenth + "   速度  " + speed);
+    }
+
+    @Override
+    public void onDownloadSuccess(DownloadItemInfo downloadItemInfo) {
+        Log.i(TAG, "下载成功    路劲  " + downloadItemInfo.getFilePath() + "  url " + downloadItemInfo.getUrl());
+    }
+
+    @Override
+    public void onDownloadPause(DownloadItemInfo downloadItemInfo) {
+
+    }
+
+    @Override
+    public void onDownloadError(DownloadItemInfo downloadItemInfo, int var2, String var3) {
+
+    }
+
 }

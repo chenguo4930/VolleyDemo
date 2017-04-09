@@ -8,6 +8,7 @@ import com.example.cheng.volleydemo.http.download.DownFileManager;
 
 public class MainActivity extends AppCompatActivity {
     public  static  final String url="http://192.168.100.24:8080/UserRecord/LoginServlet";
+    private static final String TAG = "seven";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,6 +34,6 @@ public class MainActivity extends AppCompatActivity {
 //        }
 
         DownFileManager downFileService=new DownFileManager();
-        downFileService.down("http://gdown.baidu.com/data/wisegame/8be18d2c0dc8a9c9/WPSOffice_177.apk");
+        downFileService.download("http://gdown.baidu.com/data/wisegame/8be18d2c0dc8a9c9/WPSOffice_177.apk");
     }
 }

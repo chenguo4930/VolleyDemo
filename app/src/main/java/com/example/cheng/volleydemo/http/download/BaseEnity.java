@@ -19,10 +19,11 @@ import java.io.Serializable;
  * @version 1.0.0
  * @since 2017-04-08
  */
-public class BaseEnity<T> implements Serializable{
+public class BaseEnity<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    public  BaseEnity() {
+
+    public BaseEnity() {
     }
 
     public T copy() {
@@ -43,14 +44,14 @@ public class BaseEnity<T> implements Serializable{
         } catch (ClassNotFoundException classNot) {
             classNot.printStackTrace();
         } finally {
-            if(byteArrayOutputStream != null) {
+            if (byteArrayOutputStream != null) {
                 try {
                     byteArrayOutputStream.close();
                 } catch (IOException io) {
                     io.printStackTrace();
                 }
             }
-            if(objectOutputStream != null) {
+            if (objectOutputStream != null) {
                 try {
                     objectOutputStream.close();
                 } catch (IOException io) {

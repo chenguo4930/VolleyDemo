@@ -57,10 +57,34 @@ public class DownloadListener implements IDownListener {
         this.breakPoint = file.length();
     }
 
-
+    @Override
+    public void addHttpHeader(Map<String, String> headerMap) {
+        long length = getFile().length();
+        if (length > 0L) {
+            headerMap.put("RANGE", "bytes=" + length + "-");
+        }
+    }
 
     public DownloadListener(DownloadItemInfo downloadItemInfo) {
         this.downloadItemInfo = downloadItemInfo;
+    }
+
+
+    @Override
+    public void setHttpservice(IHttpService httpservice) {
+        this.httpService = httpservice;
+    }
+
+    /**
+     * 设置取消接口
+     */
+    @Override
+    public void setCancleCalle() {
+
+    }
+
+    @Override
+    public void setPauseCallble() {
     }
 
     @Override
@@ -165,21 +189,6 @@ public class DownloadListener implements IDownListener {
         }
     }
 
-    private void downloadLengthChange(final long downlength, final long totalLength, final long speed) {
-        downloadItemInfo.setCurrentLength(downlength);
-        if (downloadServiceCallable != null) {
-            final DownloadItemInfo copyDownloadItemInfo = downloadItemInfo.copy();
-            synchronized (this.downloadServiceCallable) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        downloadServiceCallable.onCurrentSizeChanged(copyDownloadItemInfo, downlength / totalLength, speed);
-                    }
-                });
-            }
-        }
-    }
-
     /**
      * 创建文件夹
      *
@@ -190,6 +199,21 @@ public class DownloadListener implements IDownListener {
         return parentFile.exists() && !parentFile.isFile()
                 ? parentFile.exists() && parentFile.isDirectory()
                 : parentFile.mkdirs();
+    }
+
+    private void downloadLengthChange(final long downlength, final long totalLength, final long speed) {
+        downloadItemInfo.setCurrentLength(downlength);
+        if (downloadServiceCallable != null) {
+            final DownloadItemInfo copyDownloadItemInfo = downloadItemInfo.copy();
+            synchronized (this.downloadServiceCallable) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        downloadServiceCallable.onCurrentSizeChanged(copyDownloadItemInfo, downlength * 100 / totalLength, speed);
+                    }
+                });
+            }
+        }
     }
 
     /**
@@ -213,7 +237,7 @@ public class DownloadListener implements IDownListener {
     }
 
     /**
-     * 下载长度的变化
+     * 回调 下载长度的变化
      *
      * @param totalLength
      */
@@ -232,41 +256,12 @@ public class DownloadListener implements IDownListener {
         }
     }
 
-    private IHttpService getHttpService() {
-        return httpService;
-    }
-
     @Override
     public void onFail() {
-
     }
 
-    @Override
-    public void addHttpHeader(Map<String, String> headerMap) {
-        long length = getFile().length();
-        if (length > 0L){
-            headerMap.put("RANG","bytes="+length+"-");
-
-
-        }
-    }
-
-    @Override
-    public void setHttpservice(IHttpService httpservice) {
-        this.httpService = httpservice;
-    }
-
-    /**
-     * 设置取消接口
-     */
-    @Override
-    public void setCancleCalle() {
-
-    }
-
-    @Override
-    public void setPauseCallble() {
-
+    private IHttpService getHttpService() {
+        return httpService;
     }
 
     public File getFile() {

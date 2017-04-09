@@ -37,7 +37,9 @@ public class FileDownHttpService implements IHttpService {
 
     //请求头参数信息
     private Map<String, String> headerMap = synchronizedMap(new HashMap<String, String>());
-
+    /**
+     * 含有请求处理的接口
+     */
     private IHttpListener httpListener;
 
     private HttpClient httpClient = new DefaultHttpClient();
@@ -81,7 +83,6 @@ public class FileDownHttpService implements IHttpService {
             String value = headerMap.get(key);
             Log.i(TAG, "请求头信息" + key + "  valuse=" + value);
             httpGet.addHeader(key, value);
-
         }
     }
 
@@ -134,7 +135,6 @@ public class FileDownHttpService implements IHttpService {
             } else {
                 httpListener.onFail();
             }
-
             return null;
         }
     }
