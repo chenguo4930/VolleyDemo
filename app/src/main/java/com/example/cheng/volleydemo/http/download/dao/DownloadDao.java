@@ -58,7 +58,6 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
             Cursor cursor = this.sqLiteDatabase.rawQuery(sql, null);
             if (cursor.moveToNext()) {
                 String[] colmName = cursor.getColumnNames();
-
                 int index = cursor.getColumnIndex("max(id)");
                 if (index != -1) {
                     Object value = cursor.getInt(index);

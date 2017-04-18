@@ -15,7 +15,7 @@ import com.example.cheng.volleydemo.http.interfaces.IHttpService;
  * @version 1.0.0
  * @since 2017-04-08
  */
-public interface IDownListener extends IHttpListener{
+public interface IDownListener extends IHttpListener {
 
     void setHttpservice(IHttpService httpservice);
 

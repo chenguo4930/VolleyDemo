@@ -12,7 +12,7 @@ package com.example.cheng.volleydemo.http.download.enums;
  * @version 1.0.0
  * @since 2017-04-08
  */
-public enum  DownloadStatus {
+public enum DownloadStatus {
     waitting(0),
 
     starting(1),
@@ -27,7 +27,7 @@ public enum  DownloadStatus {
 
     private int value;
 
-    private DownloadStatus(int value){
+    private DownloadStatus(int value) {
         this.value = value;
     }
 

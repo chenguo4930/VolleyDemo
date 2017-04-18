@@ -7,14 +7,14 @@ import com.example.cheng.volleydemo.http.HttpTask;
  * Created by cheng on 2017/4/8.
  */
 @DbTable("t_downloadInfo")
-public class DownloadItemInfo extends BaseEnity<DownloadItemInfo>{
+public class DownloadItemInfo extends BaseEnity<DownloadItemInfo> {
 
     public long currentLength;
 
     public long totalLength;
 
     //忽略序列化
-    public  transient  HttpTask httpTask;
+    public transient HttpTask httpTask;
     /**
      * 下载id
      */
@@ -154,7 +154,7 @@ public class DownloadItemInfo extends BaseEnity<DownloadItemInfo>{
         this.filePath = filePath;
     }
 
-    public DownloadItemInfo( ) {
+    public DownloadItemInfo() {
     }
 
 

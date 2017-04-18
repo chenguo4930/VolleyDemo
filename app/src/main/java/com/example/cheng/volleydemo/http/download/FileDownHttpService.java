@@ -56,7 +56,7 @@ public class FileDownHttpService implements IHttpService {
     /**
      * 增加方法,线程安全的，只允许一个线程访问
      */
-    private AtomicBoolean pause=new AtomicBoolean(false);
+    private AtomicBoolean pause = new AtomicBoolean(false);
 
     @Override
     public void setUrl(String url) {
@@ -105,7 +105,7 @@ public class FileDownHttpService implements IHttpService {
 
     @Override
     public void pause() {
-        pause.compareAndSet(false,true);
+        pause.compareAndSet(false, true);
     }
 
     @Override
