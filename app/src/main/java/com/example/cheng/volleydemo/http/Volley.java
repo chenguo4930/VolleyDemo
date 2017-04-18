@@ -26,17 +26,20 @@ public class Volley {
      * @param <T> 请求参数类型
      * @param <M> 响应参数类型
      */
-    public static <T, M> void sendRequest(T requestInfo, String url, Class<M> response, IDataListener dataListener) {
+    public static <T, M> void sendRequest(T requestInfo, String url, HttpMethod method, Class<M> response, IDataListener dataListener) {
         RequestHolder<T> requestHolder = new RequestHolder<>();
         requestHolder.setRequestInfo(requestInfo);
         requestHolder.setUrl(url);
+        requestHolder.setMethod(method);
+
         IHttpService httpService = new JsonHttpService();
         requestHolder.setHttpService(httpService);
+
         IHttpListener httpListener = new JsonDealListener<>(response, dataListener);
         requestHolder.setHttpListener(httpListener);
         HttpTask<T> httpTask = new HttpTask<>(requestHolder);
         try {
-            ThreadPoolManager.getInstance().execte(new FutureTask<Object>(httpTask,null));
+            ThreadPoolManager.getInstance().execte(new FutureTask<Object>(httpTask, null));
         } catch (InterruptedException e) {
             dataListener.onFail();
         }

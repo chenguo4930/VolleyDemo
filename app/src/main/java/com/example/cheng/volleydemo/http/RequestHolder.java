@@ -31,6 +31,16 @@ public class RequestHolder<T> {
 
     private String url;
 
+    private HttpMethod method;
+
+    public HttpMethod getMethod() {
+        return method;
+    }
+
+    public void setMethod(HttpMethod method) {
+        this.method = method;
+    }
+
     public IHttpService getHttpService() {
         return httpService;
     }

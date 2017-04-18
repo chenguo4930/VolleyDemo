@@ -7,6 +7,7 @@ package com.example.cheng.volleydemo.http.download;
 
 import android.util.Log;
 
+import com.example.cheng.volleydemo.http.HttpMethod;
 import com.example.cheng.volleydemo.http.interfaces.IHttpListener;
 import com.example.cheng.volleydemo.http.interfaces.IHttpService;
 
@@ -45,6 +46,7 @@ public class FileDownHttpService implements IHttpService {
     private HttpClient httpClient = new DefaultHttpClient();
     private HttpGet httpGet;
     private String url;
+    private HttpMethod method;
 
     private byte[] requestData;
     /**
@@ -63,6 +65,7 @@ public class FileDownHttpService implements IHttpService {
 
     @Override
     public void excute() {
+        //下载都是用get方式
         httpGet = new HttpGet(url);
         constrcuteHeader();
 
@@ -123,6 +126,11 @@ public class FileDownHttpService implements IHttpService {
     @Override
     public boolean isPause() {
         return pause.get();
+    }
+
+    @Override
+    public void setMethod(HttpMethod value) {
+        this.method = value;
     }
 
     private class HttpRespnceHandler extends BasicResponseHandler {

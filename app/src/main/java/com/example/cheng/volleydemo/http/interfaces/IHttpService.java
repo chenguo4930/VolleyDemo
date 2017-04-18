@@ -5,6 +5,8 @@
  */
 package com.example.cheng.volleydemo.http.interfaces;
 
+import com.example.cheng.volleydemo.http.HttpMethod;
+
 import java.util.Map;
 
 /**
@@ -54,4 +56,6 @@ public interface IHttpService {
     boolean isCancle();
 
     boolean isPause();
+
+    void setMethod(HttpMethod value);
 }

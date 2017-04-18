@@ -31,4 +31,5 @@ dependencies {
 
     compile 'com.alibaba:fastjson:1.2.23'
     compile 'httpcomponents-httpcore:httpcore:4.0-alpha6'
+    compile 'com.apkfuns.logutils:library:1.5.1.1'
 }

@@ -13,7 +13,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.concurrent.FutureTask;
 
 /**
- * class description here
+ * 网络请求执行任务
  *
  * @author cheng
  * @version 1.0.0
@@ -23,10 +23,12 @@ public class HttpTask<T> implements Runnable {
 
     private IHttpService httpService;
     private FutureTask futureTask;
+
     public HttpTask(RequestHolder<T> requestHolder) {
         httpService = requestHolder.getHttpService();
         httpService.setHttpListener(requestHolder.getHttpListener());
         httpService.setUrl(requestHolder.getUrl());
+        httpService.setMethod(requestHolder.getMethod());
 
         //增加方法
         IHttpListener httpListener = requestHolder.getHttpListener();
@@ -53,9 +55,8 @@ public class HttpTask<T> implements Runnable {
     /**
      * 新增方法
      */
-    public void start()
-    {
-        futureTask=new FutureTask(this,null);
+    public void start() {
+        futureTask = new FutureTask(this, null);
         try {
             ThreadPoolManager.getInstance().execte(futureTask);
         } catch (InterruptedException e) {
@@ -63,14 +64,13 @@ public class HttpTask<T> implements Runnable {
         }
 
     }
+
     /**
      * 新增方法
      */
-    public  void pause()
-    {
+    public void pause() {
         httpService.pause();
-        if(futureTask!=null)
-        {
+        if (futureTask != null) {
             ThreadPoolManager.getInstance().removeTask(futureTask);
         }
 

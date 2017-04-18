@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.alibaba.fastjson.JSON;
+import com.apkfuns.logutils.LogUtils;
 import com.example.cheng.volleydemo.http.interfaces.IDataListener;
 import com.example.cheng.volleydemo.http.interfaces.IHttpListener;
 
@@ -27,16 +28,16 @@ import java.util.Map;
  * @version 1.0.0
  * @since 2017-04-06
  */
-public class JsonDealListener<T> implements IHttpListener {
-    private Class<T> response;
+public class JsonDealListener<M> implements IHttpListener {
+    private Class<M> response;
     /**
      * 回调调用层 的接口
      */
-    private IDataListener<T> dataListener;
+    private IDataListener<M> dataListener;
 
     Handler handler = new Handler(Looper.getMainLooper());
 
-    public JsonDealListener(Class<T> response, IDataListener<T> dataListener) {
+    public JsonDealListener(Class<M> response, IDataListener<M> dataListener) {
         this.response = response;
         this.dataListener = dataListener;
     }
@@ -48,7 +49,7 @@ public class JsonDealListener<T> implements IHttpListener {
             inputStream = httpEntity.getContent();
             //通过流转化为String,得到网络返回的数据, 子线程
             String content = getContent(inputStream);
-            final T t = JSON.parseObject(content,response);
+            final M t = JSON.parseObject(content, response);
 
             handler.post(new Runnable() {
                 @Override
@@ -60,7 +61,6 @@ public class JsonDealListener<T> implements IHttpListener {
         } catch (IOException e) {
             dataListener.onFail();
         }
-
     }
 
     @Override
@@ -74,7 +74,6 @@ public class JsonDealListener<T> implements IHttpListener {
     }
 
     private String getContent(InputStream inputStream) {
-        String content = null;
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder sb = new StringBuilder();
@@ -93,12 +92,13 @@ public class JsonDealListener<T> implements IHttpListener {
                     System.out.println("Error=" + e.toString());
                 }
             }
+            LogUtils.e(sb.toString());
             return sb.toString();
 
         } catch (Exception e) {
             e.printStackTrace();
             dataListener.onFail();
         }
-        return content;
+        return null;
     }
 }
