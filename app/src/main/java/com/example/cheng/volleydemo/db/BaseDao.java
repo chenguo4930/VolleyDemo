@@ -116,7 +116,7 @@ public abstract class BaseDao<T> implements IBaseDao<T> {
                             field.set(item, cursor.getDouble(columnIndex));
                         } else if (type == Integer.class) {
                             int value = cursor.getInt(columnIndex);
-                            Log.i("dongnao", "value=" + value);
+                            Log.i("chengguo", "数据库value=" + value);
                             field.set(item, cursor.getInt(columnIndex));
                         } else if (type == Long.class) {
                             field.set(item, cursor.getLong(columnIndex));

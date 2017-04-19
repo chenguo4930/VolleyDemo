@@ -36,7 +36,22 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
 
     @Override
     public String createTable() {
-        return "create table if not exists  t_downloadInfo(" + "id Integer primary key, " + "url TEXT not null," + "filePath TEXT not null, " + "displayName TEXT, " + "status Integer, " + "totalLen Long, " + "currentLen Long," + "startTime TEXT," + "finishTime TEXT," + "userId TEXT, " + "httpTaskType TEXT," + "priority  Integer," + "stopMode Integer," + "downloadMaxSizeKey TEXT," + "unique(filePath))";
+        return "create table if not exists  t_downloadInfo(" +
+                "id Integer primary key, " +
+                "url TEXT not null," +
+                "filePath TEXT not null, " +
+                "displayName TEXT, " +
+                "status Integer, " +
+                "totalLen Long, " +
+                "currentLen Long," +
+                "startTime TEXT," +
+                "finishTime TEXT," +
+                "userId TEXT, " +
+                "httpTaskType TEXT," +
+                "priority  Integer," +
+                "stopMode Integer," +
+                "downloadMaxSizeKey TEXT," +
+                "unique(filePath))";
     }
 
     @Override
@@ -55,7 +70,7 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
         int maxId = 0;
         String sql = "select max(id)  from " + getTableName();
         synchronized (DownloadDao.class) {
-            Cursor cursor = this.sqLiteDatabase.rawQuery(sql, null);
+            Cursor cursor = sqLiteDatabase.rawQuery(sql, null);
             if (cursor.moveToNext()) {
                 String[] colmName = cursor.getColumnNames();
                 int index = cursor.getColumnIndex("max(id)");
@@ -97,7 +112,6 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
             }
             return null;
         }
-
     }
 
     /**
@@ -115,7 +129,6 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
             List<DownloadItemInfo> resultList = super.query(where);
             return resultList;
         }
-
     }
 
     /**
@@ -128,7 +141,7 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
      *                    TODO
      * @return 下载id
      */
-    public DownloadItemInfo addRecord(String url, String filePath, String displayName, int priority) {
+    public int addRecord(String url, String filePath, String displayName, int priority) {
         synchronized (DownloadDao.class) {
             DownloadItemInfo existDownloadInfo = findRecord(url, filePath);
             if (existDownloadInfo == null) {
@@ -146,9 +159,9 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
                 record.setPriority(priority);
                 super.insert(record);
                 downloadItemInfoList.add(record);
-                return record;
+                return record.getId();
             }
-            return null;
+            return -1;
         }
     }
 
@@ -180,7 +193,7 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
     }
 
     /**
-     * 根据下载地址和下载文件路径查找下载记录
+     * 根据下载文件路径查找下载记录
      * <p>
      * 下载地址
      *
@@ -217,7 +230,6 @@ public class DownloadDao extends BaseDao<DownloadItemInfo> {
             }
             return null;
         }
-
     }
 
     /**

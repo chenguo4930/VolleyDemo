@@ -36,7 +36,9 @@ import static java.util.Collections.synchronizedMap;
 public class FileDownHttpService implements IHttpService {
     private static final String TAG = "FileDownHttpService";
 
-    //请求头参数信息
+    /**
+     * 即将添加到请求头的信息
+     */
     private Map<String, String> headerMap = synchronizedMap(new HashMap<String, String>());
     /**
      * 含有请求处理的接口

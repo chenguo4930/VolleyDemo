@@ -8,8 +8,8 @@ package com.example.cheng.volleydemo.http.download;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
+import com.apkfuns.logutils.LogUtils;
 import com.example.cheng.volleydemo.db.BaseDaoFactory;
 import com.example.cheng.volleydemo.http.HttpTask;
 import com.example.cheng.volleydemo.http.RequestHolder;
@@ -30,7 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
- * class description here
+ * 文件下载管理类
  *
  * @author cheng
  * @version 1.0.0
@@ -43,9 +43,9 @@ public class DownFileManager implements IDownloadServiceCallable {
     DownloadDao downloadDao = BaseDaoFactory.getInstance().getDataHelper(DownloadDao.class, DownloadItemInfo.class);
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
     /**
-     * 观察者模式
+     * 观察者模式 下载监听
      */
-    private final List<IDownloadCallable> applisteners = new CopyOnWriteArrayList<IDownloadCallable>();
+    private final List<IDownloadCallable> appListeners = new CopyOnWriteArrayList<IDownloadCallable>();
     /**
      * 承载下载的所有任务
      */
@@ -68,10 +68,19 @@ public class DownFileManager implements IDownloadServiceCallable {
         return this.download(url, filePath, displayName, Priority.middle);
     }
 
+    /**
+     * 下载方法
+     *
+     * @param url
+     * @param filePath
+     * @param displayName
+     * @param priority
+     * @return
+     */
     public int download(String url, String filePath,
                         String displayName, Priority priority) {
 
-
+        LogUtils.i("文件准备下载的路径：" + filePath);
         if (priority == null) {
             priority = Priority.low;
         }
@@ -91,73 +100,92 @@ public class DownFileManager implements IDownloadServiceCallable {
             if (samesFile.size() > 0) {
                 DownloadItemInfo sameDown = samesFile.get(0);
                 if (sameDown.getCurrentLen() == sameDown.getTotalLen()) {
-                    synchronized (applisteners) {
-                        for (IDownloadCallable applistener : applisteners) {
+                    synchronized (appListeners) {
+                        for (IDownloadCallable applistener : appListeners) {
                             applistener.onDownloadError(sameDown.getId(), 2, "文件已经下载");
                         }
                     }
                 }
             }
-            /**
+            /**---------------------------------------------
              * 插入数据库
+             * 可能插入失败
+             * 因为filePath  和id是独一无二的  在数据库建表时已经确定了
              */
-            downloadItemInfo = downloadDao.addRecord(url, filePath, displayName, priority.getValue());
-            if (downloadItemInfo != null) {
-                synchronized (applisteners) {
-                    for (IDownloadCallable applistener : applisteners) {
+            int recordId = downloadDao.addRecord(url, filePath, displayName, priority.getValue());
+            if (recordId != -1) {
+                synchronized (appListeners) {
+                    for (IDownloadCallable applistener : appListeners) {
                         //通知应用层，数据库被添加了
                         applistener.onDownloadInfoAdd(downloadItemInfo.getId());
                     }
                 }
+            } else {
+                //插入失败时，再次进行查找，确保能够查得到
+                downloadItemInfo = downloadDao.findRecord(url, filePath);
             }
-            downloadItemInfo = downloadDao.findRecord(url, filePath);
-            if (isDowning(file.getAbsolutePath())) {
-                synchronized (applisteners) {
-                    for (IDownloadCallable applistener : applisteners) {
-                        applistener.onDownloadError(downloadItemInfo.getId(), 3, "正在下载，请不要重复添加");
-                    }
+        }
+        /**-----------------------------------------------
+         * 括号写错了  放在外面
+         *
+         * 是否正在下载`
+         */
+        if (isDowning(file.getAbsolutePath())) {
+            synchronized (appListeners) {
+                for (IDownloadCallable applistener : appListeners) {
+                    applistener.onDownloadError(downloadItemInfo.getId(), 3, "正在下载，请不要重复添加");
                 }
-                return downloadItemInfo.getId();
             }
-            if (downloadItemInfo != null) {
-                downloadItemInfo.setPriority(priority.getValue());
-                //判断数据库存的状态是否是完成
-                if (downloadItemInfo.getStatus() != DownloadStatus.finish.getValue()) {
-                    if (downloadItemInfo.getTotalLen() == 0L || file.length() == 0L) {
-                        Log.i(TAG, "还未开始下载");
-                        downloadItemInfo.setStatus(DownloadStatus.failed.getValue());
-                    }
-                    //判断数据库中 总长度是否等于文件长度
-                    if (downloadItemInfo.getTotalLen() == file.length() && downloadItemInfo.getTotalLen() != 0) {
-                        downloadItemInfo.setStatus(DownloadStatus.finish.getValue());
-                        synchronized (applisteners) {
-                            for (IDownloadCallable applistener : applisteners) {
-                                //应该在每一个上层回调接口处try catch
-                                try {
-                                    applistener.onDownloadError(downloadItemInfo.getId(), 4, "已经下载了");
-                                } catch (Exception e) {
-                                }
+            return downloadItemInfo.getId();
+        }
+
+        if (downloadItemInfo != null) {
+            downloadItemInfo.setPriority(priority.getValue());
+            //------------添加-----------------------------------
+            downloadItemInfo.setStopMode(DownloadStopMode.auto.getValue());
+
+            //判断数据库存的状态是否是完成
+            if (downloadItemInfo.getStatus() != DownloadStatus.finish.getValue()) {
+                if (downloadItemInfo.getTotalLen() == 0L || file.length() == 0L) {
+                    LogUtils.e("还未开始下载");
+                    //----------------------删除--------------------
+                    downloadItemInfo.setStatus(DownloadStatus.failed.getValue());
+                }
+                //判断数据库中 总长度是否等于文件长度
+                if (downloadItemInfo.getTotalLen() == file.length() && downloadItemInfo.getTotalLen() != 0) {
+                    downloadItemInfo.setStatus(DownloadStatus.finish.getValue());
+                    synchronized (appListeners) {
+                        for (IDownloadCallable applistener : appListeners) {
+                            //应该在每一个上层回调接口处try catch
+                            try {
+                                applistener.onDownloadError(downloadItemInfo.getId(), 4, "已经下载了");
+                            } catch (Exception e) {
                             }
                         }
                     }
                 }
-                /**
-                 * 更新
-                 */
-                downloadDao.updateRecord(downloadItemInfo);
             }
-
+            //------------------添加------------------
+            else {
+                if (!file.exists() || (downloadItemInfo.getTotalLen() != downloadItemInfo.getCurrentLen())) {
+                    downloadItemInfo.setStatus(DownloadStatus.failed.getValue());
+                }
+            }
+            /**
+             * 更新
+             */
+            downloadDao.updateRecord(downloadItemInfo);
             /**
              * 判断是否已经下载完成
              */
             if (downloadItemInfo.getStatus() == DownloadStatus.finish.getValue()) {
-                Log.i(TAG, "已经下载完成  回调应用层");
+                LogUtils.e("已经下载完成  回调应用层");
                 final int downId = downloadItemInfo.getId();
-                synchronized (applisteners) {
+                synchronized (appListeners) {
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            for (IDownloadCallable downloadCallable : applisteners) {
+                            for (IDownloadCallable downloadCallable : appListeners) {
                                 downloadCallable.onDownloadStatusChanged(downId, DownloadStatus.finish);
                             }
                         }
@@ -173,16 +201,26 @@ public class DownFileManager implements IDownloadServiceCallable {
                 for (DownloadItemInfo downling : allDowning) {
                     //从下载表中  获取到全部正在下载的任务
                     downling = downloadDao.findSigleRecord(downling.getFilePath());
-
-                    if (downloadItemInfo != null && downloadItemInfo.getPriority() == Priority.high.getValue()) {
-                        if (downloadItemInfo.getFilePath().equals(downling.getFilePath())) {
+                    if (downling != null && downling.getPriority() == Priority.high.getValue()) {
+                        /**
+                         *  更改---------
+                         *  当前下载级别不是最高级 传进来的是middle  但是在数据库中查到路径一模一样 的记录   所以他也是最高级-------------
+                         *  比如 第一次下载是用最高级下载，app闪退后，没有下载完成，第二次传的是默认级别，这样就应该是最高级别下载
+                         */
+                        if (downling.getFilePath().equals(downloadItemInfo.getFilePath())) {
+                            break;
+                        } else {
                             return downloadItemInfo.getId();
                         }
+//                        if(downloadItemInfo.getFilePath().equals(downling.getFilePath()))
+//                        {
+//                            return downloadItemInfo.getId();
+//                        }
                     }
                 }
             }
-            //
-            DownloadItemInfo addDownloadInfo = reallyDown(downloadItemInfo);
+            //开始下载文件
+            reallyDown(downloadItemInfo);
             if (priority == Priority.high || priority == Priority.middle) {
                 synchronized (allDowning) {
                     for (DownloadItemInfo downloadItemInfo1 : allDowning) {
@@ -248,8 +286,8 @@ public class DownFileManager implements IDownloadServiceCallable {
      * @param downCallable
      */
     public void setDownCallable(IDownloadCallable downCallable) {
-        synchronized (applisteners) {
-            applisteners.add(downCallable);
+        synchronized (appListeners) {
+            appListeners.add(downCallable);
         }
     }
 
@@ -304,13 +342,18 @@ public class DownFileManager implements IDownloadServiceCallable {
 
     @Override
     public void onCurrentSizeChanged(DownloadItemInfo downloadItemInfo, double downLenth, long speed) {
-        Log.i(TAG, "下载速度：" + speed / 1000 + "k/s");
-        Log.i(TAG, "-----路径  " + downloadItemInfo.getFilePath() + "  下载长度  " + downLenth + "   速度  " + speed);
+        LogUtils.i("下载速度：" + speed / 1000 + "k/s");
+        LogUtils.i("-----路径  " + downloadItemInfo.getFilePath() + "  下载长度  " + downLenth + "   速度  " + speed);
+        synchronized (appListeners) {
+            for (IDownloadCallable appListener : appListeners) {
+                appListener.onCurrentSizeChanged(downloadItemInfo.getId(), downLenth, speed);
+            }
+        }
     }
 
     @Override
     public void onDownloadSuccess(DownloadItemInfo downloadItemInfo) {
-        Log.i(TAG, "下载成功    路劲  " + downloadItemInfo.getFilePath() + "  url " + downloadItemInfo.getUrl());
+        LogUtils.i("下载成功    路劲  " + downloadItemInfo.getFilePath() + "  url " + downloadItemInfo.getUrl());
     }
 
     @Override
